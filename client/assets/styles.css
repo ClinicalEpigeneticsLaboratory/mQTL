@@ -1,0 +1,54 @@
+.button-interact:hover {
+    box-shadow: 0 0 11px darkslategrey;
+    background-color: #2e71c9
+}
+.button-home-style{
+    position: relative;
+    margin: 5%;
+    bottom: 5%;
+    width: 90%;
+}
+.card-style-custom{
+    min-height: 250px;
+    margin-right: 5%;
+    margin-bottom: 5%;
+}
+.card-style-custom:hover{
+    box-shadow: 0 0 11px darkslategrey;
+}
+.text-align {
+    text-align: center;
+}
+.card-text {
+    text-align: center;
+    min-height: 75px;
+}
+.footer-custom {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 50px;
+    padding: 15px;
+    margin-top: 15px;
+    margin-left: auto;
+    background-color: #e95420;
+    opacity: 95%;
+    display: flex;
+    justify-content: left; /* Align horizontal */
+    align-items: center
+}
+
+.custom-input-form {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding: 15px 15px;
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    width: 100%;
+    transition: border-color 0.3s ease;
+}
+
+.invalid {
+    border-radius: 10px;
+    border: 4px solid red;
+}
