@@ -50,7 +50,7 @@ class Client:
             "tissue": self.tissue,
             "phenotype": self.phenotype,
             "cpg": self.cpg,
-            "rs": self.rs
+            "rs": self.rs,
         }
 
         try:

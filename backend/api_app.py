@@ -1,12 +1,60 @@
+from celery import Celery
 from fastapi import FastAPI
+from sqlalchemy import create_engine
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import SQLAlchemyError
+from pymongo.errors import ConnectionFailure
+from pymongo import MongoClient
+
 from tasks import analyse, celery_app
+from src.url_utils import create_postgres_url, create_mongo_url
+from src.url_utils import create_broker_url, create_backend_url
 from src.db_operations import select_samples_from_db
 
 api_app = FastAPI()
 
 
-# Celery tasks
+@api_app.get("/test-mongo")
+def test_mongodb_connection():
+    try:
+        client = MongoClient(create_mongo_url())
+        db = client["mQTL"]
+
+        db.command("serverStatus")
+        client.close()
+
+        return {"Mongo": "ok"}
+
+    except ConnectionFailure:
+        return {"Mongo": "Failed to connect to MongoDB"}
+
+
+@api_app.get("/test-postgres")
+def test_postgres_connection():
+    try:
+        engine = create_engine(create_postgres_url())
+        with engine.connect():
+            return {"Postgres": "ok"}
+
+    except SQLAlchemyError:
+        return {"Postgres": "Failed to connect to PostgresDB"}
+
+
+@api_app.get("/test-celery")
+def test_celery():
+    app = Celery(include=["tasks"])
+
+    app.conf.broker_url = create_broker_url()
+    app.conf.result_backend = create_backend_url()
+
+    response = app.control.ping()
+
+    if response:
+        return {"Celery": "ok"}
+
+    return {"Celery": "Failed to ping Celery"}
+
+
 class ToAnalyse(BaseModel):
     age: tuple[int, int] = (1, 100)
     sex: tuple[str, ...] = Field(max_length=2, min_length=1, default=("Male", "Female"))

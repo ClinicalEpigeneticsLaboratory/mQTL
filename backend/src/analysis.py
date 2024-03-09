@@ -39,6 +39,8 @@ class Analyser:
 
     def model(self) -> tuple[dict, dict]:
         data = self.data[[self.rs, self.cpg]].copy()
+        data["Intercept"] = 1
+
         order = sorted(data[self.rs].unique())
         code = [cnt for cnt, _ in enumerate(order)]
 
@@ -56,10 +58,18 @@ class Analyser:
         return table_a, table_b
 
     def categorical_plot(self, y: str, y_range: tuple | None = None) -> str:
-        fig = px.box(self.data, x=self.rs, y=y)
+        fig = px.box(
+            self.data,
+            x=self.rs,
+            y=y,
+            labels={self.phenotype: self.phenotype.replace("_", " ")},
+        )
 
         if y_range:
-            fig.update_layout(font={"size": 16}, yaxis={"range": y_range})
+            fig.update_layout(
+                font={"size": 16},
+                yaxis={"range": y_range},
+            )
         else:
             fig.update_layout(font={"size": 16})
 
@@ -87,7 +97,9 @@ class Analyser:
             labels={self.phenotype: self.phenotype.replace("_", " ")},
             color=self.rs,
         )
-        fig.update_layout(font={"size": 16}, xaxis={"range": (0, 1)})
+        fig.update_layout(
+            font={"size": 16}, xaxis={"range": (0, 1)}, legend={"title": "Genotype"}
+        )
         fig = fig.to_json()
 
         return fig

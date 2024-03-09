@@ -104,5 +104,4 @@ layout = dbc.Container(
         ),
     ],
     fluid=True,
-    className="main-container",
 )

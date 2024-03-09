@@ -9,9 +9,7 @@ def analyse(
     cpg: str,
     rs: str,
 ) -> dict:
-    analysis = Analyser(
-        sample_characteristics, cpg, rs, phenotype
-    )
+    analysis = Analyser(sample_characteristics, cpg, rs, phenotype)
     analysis.load_omics_data()
     analysis.load_pheno_data()
 

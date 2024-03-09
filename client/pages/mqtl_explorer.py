@@ -33,8 +33,8 @@ def load_example(_) -> ...:
 
 
 @callback(
-    Output(id_("alert"), "children"),
-    Output(id_("alert"), "is_open"),
+    Output(id_("validation-alert"), "children"),
+    Output(id_("validation-alert"), "is_open"),
     State(id_("sex-field"), "value"),
     State(id_("sample_group-field"), "value"),
     State(id_("tissue-field"), "value"),
@@ -53,14 +53,7 @@ def validate_inputs(
     cpg: str,
     _,
 ) -> ...:
-    if (
-        not sex
-        or not sample_group
-        or not tissue
-        or not pheno
-        or not rs
-        or not cpg
-    ):
+    if not sex or not sample_group or not tissue or not pheno or not rs or not cpg:
         return "Please fill missing field(s)", True
 
     if not rs.startswith("rs") or not cpg.startswith("cg"):
@@ -72,6 +65,8 @@ def validate_inputs(
 @callback(
     Output(id_("n-samples-alert"), "children"),
     Output(id_("n-samples-alert"), "is_open"),
+    Output(id_("n-samples"), "data"),
+    Output(id_("submit"), "disabled", allow_duplicate=True),
     Input(id_("sex-field"), "value"),
     Input(id_("sample_group-field"), "value"),
     Input(id_("tissue-field"), "value"),
@@ -79,7 +74,7 @@ def validate_inputs(
     Input(id_("age-field"), "value"),
     prevent_initial_call=True,
 )
-def show_number_of_samples(
+def extract_number_of_samples(
     sex: list[str], sample_group: str, tissue: str, phenotype: str, age: list[int]
 ) -> tuple:
     if sex and sample_group and tissue and phenotype:
@@ -92,7 +87,15 @@ def show_number_of_samples(
         )
 
         samples = len(analysis.get_samples_names())
-        return f"Number of samples for selected conditions --> {samples}.", True
+        if samples > 0:
+            return (
+                f"Number of samples for selected conditions --> {samples}.",
+                True,
+                samples,
+                False,
+            )
+
+        return f"Number of samples for selected conditions = 0.", True, samples, True
 
     return dash.no_update
 
@@ -121,14 +124,7 @@ def start_analysis(
     cpg: str,
     _,
 ) -> ...:
-    if (
-        sex
-        and sample_group
-        and tissue
-        and age
-        and rs
-        and cpg
-    ):
+    if sex and sample_group and tissue and age and rs and cpg:
         if rs.startswith("rs") and cpg.startswith("cg"):
             mqtl = Client(
                 sex=sex,
@@ -149,8 +145,8 @@ def start_analysis(
 
 @callback(
     Output(id_("intervals"), "disabled"),
-    Output(id_("status"), "children"),
-    Output(id_("status"), "is_open"),
+    Output(id_("status-alert"), "children"),
+    Output(id_("status-alert"), "is_open"),
     Output(id_("client-result"), "data", allow_duplicate=True),
     Output(id_("client-task"), "data"),
     Input(id_("client-task"), "data"),

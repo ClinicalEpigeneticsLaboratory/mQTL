@@ -8,7 +8,7 @@ def generate_mqtl_explorer_layout(id_: Callable) -> dbc.Container:
         [
             dbc.Alert(
                 "",
-                id=id_("alert"),
+                id=id_("validation-alert"),
                 is_open=False,
                 duration=5000,
                 dismissable=True,
@@ -17,7 +17,7 @@ def generate_mqtl_explorer_layout(id_: Callable) -> dbc.Container:
             dbc.Row(
                 dbc.Alert(
                     "",
-                    id=id_("status"),
+                    id=id_("status-alert"),
                     is_open=False,
                     dismissable=True,
                     color="success",
@@ -148,7 +148,8 @@ def generate_mqtl_explorer_layout(id_: Callable) -> dbc.Container:
                         dbc.Button(
                             "Submit", id=id_("submit"), className="button-interact"
                         ),
-                        width=1,
+                        width="auto",
+                        style={"margin": "5px"},
                     ),
                     dbc.Col(
                         dbc.Button(
@@ -156,7 +157,8 @@ def generate_mqtl_explorer_layout(id_: Callable) -> dbc.Container:
                             id=id_("load_example"),
                             className="button-interact",
                         ),
-                        width=1,
+                        width="auto",
+                        style={"margin": "5px"},
                     ),
                 ],
                 className="g-0",
@@ -204,14 +206,14 @@ def generate_mqtl_explorer_layout(id_: Callable) -> dbc.Container:
             dcc.Interval(
                 id=id_("intervals"), interval=1000, n_intervals=0, disabled=True
             ),
+            dcc.Store(id=id_("n-samples"), storage_type="memory"),
             dcc.Store(id=id_("client-task"), storage_type="memory"),
             dcc.Store(id=id_("client-result"), storage_type="memory"),
         ],
     )
 
     layout = dbc.Container(
-        [alerts, form, notifications, output, actions],
-        fluid=True,
+        [alerts, form, notifications, output, actions], fluid=True, className=""
     )
 
     return layout
