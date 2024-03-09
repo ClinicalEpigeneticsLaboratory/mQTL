@@ -5,16 +5,19 @@ from models.models import Samples, Base
 
 
 url = f"postgresql+psycopg2://user:pass@localhost:5432/mqtl-db"
-
 engine = create_engine(url)
-data = pd.read_csv("sample_sheet.csv", index_col=0)
-data = data[["Sample_Name", "Age", "Sex", "Tissue", "7/1.Melanoma type"]]
+
+data = pd.read_csv("sample_sheet.csv")
+data = data[["Sample_Name", "Age", "Sex", "Tissue", "7/1.Melanoma type", "Levine"]]
 
 data["7/1.Melanoma type"] = data["7/1.Melanoma type"].fillna("Healthy sample")
 data["7/1.Melanoma type"] = [
     "Melanoma" if value != "Healthy sample" else value
     for value in data["7/1.Melanoma type"]
 ]
+
+data["Levine"] = [0 if value < 0 else value for value in data.Levine]
+data["Acceleration"] = data.Age - data.Levine
 
 if data.isna().sum().any():
     raise Exception("NaN in original dataset!")
@@ -33,10 +36,11 @@ all_records = []
 for _, row in data.iterrows():
     single_record = Samples(
         sample_name=row.Sample_Name,
-        phenotype=row["7/1.Melanoma type"],
+        sample_group=row["7/1.Melanoma type"],
         age=row.Age,
         sex=row.Sex,
         tissue=row.Tissue,
+        epigenetic_age=row.Acceleration,
     )
     all_records.append(single_record)
 

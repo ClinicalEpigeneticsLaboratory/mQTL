@@ -8,27 +8,6 @@ card_1_content = [
     dbc.CardHeader("Tool", className="text-align"),
     dbc.CardBody(
         [
-            html.H5(
-                "Dashboard",
-                className="card-title text-align ",
-            ),
-            html.P(
-                "Browse database here ....",
-                className="card-text text-align card-text",
-            ),
-            dbc.Button(
-                "Go",
-                href="/dashboard",
-                className="button-home-style button-interact",
-            ),
-        ],
-    ),
-]
-
-card_2_content = [
-    dbc.CardHeader("Tool", className="text-align"),
-    dbc.CardBody(
-        [
             html.H5("Analyse custom mQTL", className="card-title text-align"),
             html.P(
                 "Conduct analysis here ....",
@@ -43,7 +22,7 @@ card_2_content = [
     ),
 ]
 
-card_3_content = [
+card_2_content = [
     dbc.CardHeader("Tool", className="text-align"),
     dbc.CardBody(
         [
@@ -113,14 +92,6 @@ layout = dbc.Container(
                 ),
                 dbc.Col(
                     dbc.Card(card_2_content, className="card-style-custom"),
-                    xs=12,
-                    sm=12,
-                    md=4,
-                    lg=4,
-                    xl=4,
-                ),
-                dbc.Col(
-                    dbc.Card(card_3_content, className="card-style-custom"),
                     xs=12,
                     sm=12,
                     md=4,

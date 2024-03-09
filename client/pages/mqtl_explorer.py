@@ -1,171 +1,66 @@
 import dash
-import dash_bootstrap_components as dbc
-import pandas as pd
-from dash import Input, Output, State, callback, dcc, html
+from dash import Input, Output, State, callback
 from plotly.io import from_json
-from dash import dash_table
-from .src.mQTL_client import mqtlClient
 
-dash.register_page(__name__)
+from .layouts.mqtl_explorer_layout import generate_mqtl_explorer_layout
+from .utils.utils import create_dash_table, id_factory
+from .src.connector import Client
 
-sex_explorer_field = html.Div(
-    [
-        dbc.Label("Sex", html_for="sex-field-explorer"),
-        dcc.Dropdown(
-            id="sex-field-explorer",
-            options=[
-                {"label": "Male", "value": "Male"},
-                {"label": "Female", "value": "Female"},
-            ],
-            placeholder="Select sex",
-            multi=True,
-        ),
-    ],
-    className="mb-3",
-)
-
-pheno_explorer_field = html.Div(
-    [
-        dbc.Label("Phenotype", html_for="pheno-field-explorer"),
-        dcc.Dropdown(
-            id="pheno-field-explorer",
-            options=[
-                {"label": "Healthy samples", "value": "Healthy sample"},
-                {"label": "Melanoma samples", "value": "Melanoma"},
-            ],
-            placeholder="Select phenotype",
-            multi=True,
-        ),
-    ],
-    className="mb-3",
-)
-
-tissue_explorer_field = html.Div(
-    [
-        dbc.Label("Tissue", html_for="tissue-field-explorer"),
-        dcc.Dropdown(
-            id="tissue-field-explorer",
-            options=[
-                {"label": "Whole blood", "value": "Blood"},
-                {"label": "Buccal swab", "value": "Swab"},
-            ],
-            placeholder="Select tissue",
-            multi=True,
-        ),
-    ],
-    className="mb-3",
-)
-
-age_explorer_field = html.Div(
-    [
-        dbc.Label("Age", html_for="age-field-explorer"),
-        dcc.RangeSlider(
-            id="age-field-explorer",
-            min=0,
-            max=100,
-            value=[45, 55],
-            allowCross=False,
-            marks=None,
-            tooltip={"placement": "bottom", "always_visible": True},
-        ),
-    ],
-    className="mb-3",
-)
-
-form = dbc.Form(
-    [
-        dbc.Row(
-            [
-                dbc.Col(sex_explorer_field),
-                dbc.Col(pheno_explorer_field),
-                dbc.Col(tissue_explorer_field),
-                dbc.Col(age_explorer_field),
-            ]
-        ),
-        dbc.Row(
-            [
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupText("rs"),
-                            dbc.Input(placeholder="rsID", id="rsID-field-explorer"),
-                        ],
-                        className="mb-3",
-                    )
-                ),
-                dbc.Col(
-                    dbc.InputGroup(
-                        [
-                            dbc.InputGroupText("cg"),
-                            dbc.Input(placeholder="cpgID", id="cpgID-field-explorer"),
-                        ],
-                        className="mb-3",
-                    )
-                ),
-            ]
-        ),
-        dbc.Row(
-            dbc.Col(
-                dbc.Button("Submit", id="submit-explorer", className="button-interact")
-            )
-        ),
-    ],
-    className="custom-input-form",
-)
-
-layout = dbc.Container(
-    [
-        dbc.Row(dbc.Alert("", id="alert-mqtl-explorer", is_open=False, duration=4000)),
-        dbc.Row(
-            dbc.Alert("", id="status-mqtl-explorer", is_open=False, color="danger")
-        ),
-        dcc.Interval(
-            id="intervals-mqtl-explorer", interval=1000, n_intervals=0, disabled=True
-        ),
-        form,
-        dbc.Collapse(
-            [
-                dbc.Row(
-                    [
-                        dbc.Col(dbc.Container(id="tableA-mQTL-explorer")),
-                        dbc.Col(dbc.Container(id="tableB-mQTL-explorer")),
-                    ]
-                ),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            dcc.Graph(id="plot-mQTL-explorer"),
-                            style={"margin-bottom": "10px"},
-                        )
-                    ]
-                ),
-            ],
-            is_open=False,
-            id="mqtl-explorer-plot-area",
-        ),
-        dcc.Store(id="mqtl-client-task", storage_type="memory"),
-        dcc.Store(id="mqtl-client-results", storage_type="memory"),
-    ],
-    fluid=True,
-    className="main-container",
-)
+id_ = id_factory(__name__)
+dash.register_page(__name__, title="mQTL explorer")
+layout = generate_mqtl_explorer_layout(id_)
 
 
 @callback(
-    Output("alert-mqtl-explorer", "children"),
-    Output("alert-mqtl-explorer", "is_open"),
-    State("sex-field-explorer", "value"),
-    State("pheno-field-explorer", "value"),
-    State("tissue-field-explorer", "value"),
-    State("rsID-field-explorer", "value"),
-    State("cpgID-field-explorer", "value"),
-    Input("submit-explorer", "n_clicks"),
+    Output(id_("sex-field"), "value"),
+    Output(id_("sample_group-field"), "value"),
+    Output(id_("tissue-field"), "value"),
+    Output(id_("pheno-field"), "value"),
+    Output(id_("rsID-field"), "value"),
+    Output(id_("cpgID-field"), "value"),
+    Input(id_("load_example"), "n_clicks"),
     prevent_initial_call=True,
 )
-def validate_sex(
-    sex: list[str], pheno: list[str], tissue: list[str], rs: str, cpg: str, _
+def load_example(_) -> ...:
+    return (
+        ["Male", "Female"],
+        "Healthy sample",
+        "Blood",
+        "epigenetic_age",
+        "rs1671064",
+        "cg24851651",
+    )
+
+
+@callback(
+    Output(id_("alert"), "children"),
+    Output(id_("alert"), "is_open"),
+    State(id_("sex-field"), "value"),
+    State(id_("sample_group-field"), "value"),
+    State(id_("tissue-field"), "value"),
+    State(id_("pheno-field"), "value"),
+    State(id_("rsID-field"), "value"),
+    State(id_("cpgID-field"), "value"),
+    Input(id_("submit"), "n_clicks"),
+    prevent_initial_call=True,
+)
+def validate_inputs(
+    sex: list[str],
+    sample_group: str,
+    tissue: str,
+    pheno: str,
+    rs: str,
+    cpg: str,
+    _,
 ) -> ...:
-    if not sex or not pheno or not tissue or not rs or not cpg:
+    if (
+        not sex
+        or not sample_group
+        or not tissue
+        or not pheno
+        or not rs
+        or not cpg
+    ):
         return "Please fill missing field(s)", True
 
     if not rs.startswith("rs") or not cpg.startswith("cg"):
@@ -175,31 +70,74 @@ def validate_sex(
 
 
 @callback(
-    Output("submit-explorer", "disabled", allow_duplicate=True),
-    Output("mqtl-client-task", "data", allow_duplicate=True),
-    Output("intervals-mqtl-explorer", "disabled", allow_duplicate=True),
-    State("sex-field-explorer", "value"),
-    State("pheno-field-explorer", "value"),
-    State("tissue-field-explorer", "value"),
-    State("age-field-explorer", "value"),
-    State("rsID-field-explorer", "value"),
-    State("cpgID-field-explorer", "value"),
-    Input("submit-explorer", "n_clicks"),
+    Output(id_("n-samples-alert"), "children"),
+    Output(id_("n-samples-alert"), "is_open"),
+    Input(id_("sex-field"), "value"),
+    Input(id_("sample_group-field"), "value"),
+    Input(id_("tissue-field"), "value"),
+    Input(id_("pheno-field"), "value"),
+    Input(id_("age-field"), "value"),
+    prevent_initial_call=True,
+)
+def show_number_of_samples(
+    sex: list[str], sample_group: str, tissue: str, phenotype: str, age: list[int]
+) -> tuple:
+    if sex and sample_group and tissue and phenotype:
+        analysis = Client(
+            sex=sex,
+            sample_group=sample_group,
+            phenotype=phenotype,
+            tissue=tissue,
+            age=age,
+        )
+
+        samples = len(analysis.get_samples_names())
+        return f"Number of samples for selected conditions --> {samples}.", True
+
+    return dash.no_update
+
+
+@callback(
+    Output(id_("submit"), "disabled", allow_duplicate=True),
+    Output(id_("client-task"), "data", allow_duplicate=True),
+    Output(id_("intervals"), "disabled", allow_duplicate=True),
+    State(id_("sex-field"), "value"),
+    State(id_("sample_group-field"), "value"),
+    State(id_("tissue-field"), "value"),
+    State(id_("age-field"), "value"),
+    State(id_("pheno-field"), "value"),
+    State(id_("rsID-field"), "value"),
+    State(id_("cpgID-field"), "value"),
+    Input(id_("submit"), "n_clicks"),
     prevent_initial_call=True,
 )
 def start_analysis(
     sex: list[str],
-    pheno: list[str],
-    tissue: list[str],
+    sample_group: str,
+    tissue: str,
     age: list[int],
+    phenotype: str,
     rs: str,
     cpg: str,
     _,
 ) -> ...:
-    if sex and pheno and tissue and age and rs and cpg:
+    if (
+        sex
+        and sample_group
+        and tissue
+        and age
+        and rs
+        and cpg
+    ):
         if rs.startswith("rs") and cpg.startswith("cg"):
-            mqtl = mqtlClient(
-                sex=sex, pheno=pheno, tissue=tissue, age=age, rs=rs, cpg=cpg
+            mqtl = Client(
+                sex=sex,
+                sample_group=sample_group,
+                phenotype=phenotype,
+                tissue=tissue,
+                age=age,
+                rs=rs,
+                cpg=cpg,
             )
             mqtl.get_samples_names()
             mqtl.start_analysis()
@@ -210,18 +148,18 @@ def start_analysis(
 
 
 @callback(
-    Output("intervals-mqtl-explorer", "disabled"),
-    Output("status-mqtl-explorer", "children"),
-    Output("status-mqtl-explorer", "is_open"),
-    Output("mqtl-client-results", "data"),
-    Output("mqtl-client-task", "data"),
-    Input("mqtl-client-task", "data"),
-    Input("intervals-mqtl-explorer", "n_intervals"),
+    Output(id_("intervals"), "disabled"),
+    Output(id_("status"), "children"),
+    Output(id_("status"), "is_open"),
+    Output(id_("client-result"), "data", allow_duplicate=True),
+    Output(id_("client-task"), "data"),
+    Input(id_("client-task"), "data"),
+    Input(id_("intervals"), "n_intervals"),
     prevent_initial_call=True,
 )
 def check_task_status(task_id: str, _):
     if task_id:
-        result = mqtlClient.get_result(task_id)
+        result = Client.get_result(task_id)
 
         if result["Status"] == "SUCCESS":
             return (
@@ -245,52 +183,58 @@ def check_task_status(task_id: str, _):
 
 
 @callback(
-    Output("submit-explorer", "disabled"),
-    Output("tableA-mQTL-explorer", "children"),
-    Output("tableB-mQTL-explorer", "children"),
-    Output("plot-mQTL-explorer", "figure"),
-    Output("mqtl-explorer-plot-area", "is_open"),
-    Input("mqtl-client-results", "data"),
+    Output(id_("submit"), "disabled"),
+    Output(id_("tableA"), "children"),
+    Output(id_("tableB"), "children"),
+    Output(id_("association_plot"), "figure"),
+    Output(id_("frequency_plot"), "figure"),
+    Output(id_("tableC"), "children"),
+    Output(id_("tableD"), "children"),
+    Output(id_("phenotype_genotype_plot"), "figure"),
+    Output(id_("phenotype_genotype_methyltype_plot"), "figure"),
+    Output(id_("results_area"), "is_open"),
+    Output(id_("client-result"), "data"),
+    Input(id_("client-result"), "data"),
     prevent_initial_call=True,
 )
 def render_output(data: dict) -> ...:
     if data:
-        table_a, table_b, plot = data["tableA"], data["tableB"], data["Plot"]
-        table_a = pd.DataFrame.from_dict(table_a)
-        table_b = pd.DataFrame.from_dict(table_b)
-
-        table_a = dash_table.DataTable(
-            data=table_a.to_dict("records"),
-            columns=[{"name": "", "id": str(i)} for i in table_a.columns],
-            style_table={
-                "overflowX": "auto",
-                "overflowY": "auto",
-                "width": "100%",
-                "minWidth": "100%",
-                "maxWidth": "100%",
-                "padding": "1%",
-            },
-            export_format="csv",
-            virtualization=False,
-            style_data={"whiteSpace": "normal", "height": "auto"},
+        table_a, table_b, table_c, table_d = (
+            data["tableA"],
+            data["tableB"],
+            data["tableC"],
+            data["tableD"],
         )
 
-        table_b = dash_table.DataTable(
-            data=table_b.to_dict("records"),
-            columns=[{"name": "", "id": str(i)} for i in table_b.columns],
-            style_table={
-                "overflowX": "auto",
-                "overflowY": "auto",
-                "width": "100%",
-                "minWidth": "100%",
-                "maxWidth": "100%",
-                "padding": "1%",
-            },
-            export_format="csv",
-            virtualization=False,
-            style_data={"whiteSpace": "normal", "height": "auto"},
+        table_a = create_dash_table(table_a, show_col_names=False, reset_index=False)
+        table_b = create_dash_table(table_b)
+        table_c = create_dash_table(table_c, reset_index=False)
+        table_d = create_dash_table(table_d)
+
+        (
+            mqtl_plot,
+            genotype_frequency_plot,
+            phenotype_genotype_plot,
+            phenotype_genotype_methyltype_plot,
+        ) = (
+            data["mqtl_plot"],
+            data["genotype_frequency_plot"],
+            data["phenotype_genotype_plot"],
+            data["phenotype_genotype_methyltype_plot"],
         )
 
-        return False, table_a, table_a, from_json(plot), True
+        return (
+            False,
+            table_a,
+            table_b,
+            from_json(mqtl_plot),
+            from_json(genotype_frequency_plot),
+            table_c,
+            table_d,
+            from_json(phenotype_genotype_plot),
+            from_json(phenotype_genotype_methyltype_plot),
+            True,
+            None,
+        )
 
     return dash.no_update

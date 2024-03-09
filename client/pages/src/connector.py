@@ -1,31 +1,32 @@
 import requests
 
 
-class mqtlClient:
+class Client:
     def __init__(
         self,
         age: tuple | list,
         sex: tuple | list,
-        pheno: tuple | list,
-        tissue: tuple | list,
-        cpg: str,
-        rs: str,
+        sample_group: str,
+        tissue: str,
+        phenotype: str,
+        cpg: str | None = None,
+        rs: str | None = None,
     ):
         self.endpoint = "http://localhost:8000"
         self.age = age
         self.sex = sex
-        self.pheno = pheno
+        self.sample_group = sample_group
         self.tissue = tissue
+        self.phenotype = phenotype
         self.cpg = cpg
         self.rs = rs
-        self.samples = None
         self.task_id = None
 
-    def get_samples_names(self) -> None:
+    def get_samples_names(self) -> list:
         body = {
             "age": self.age,
             "sex": self.sex,
-            "phenotype": self.pheno,
+            "phenotype": self.phenotype,
             "tissue": self.tissue,
         }
         try:
@@ -39,16 +40,19 @@ class mqtlClient:
             raise ex
 
         result = result.json()
-        self.samples = tuple(result)
+        return result
 
     def start_analysis(self) -> None:
         body = {
-            "samples": self.samples,
+            "age": self.age,
+            "sex": self.sex,
+            "sample_group": self.sample_group,
+            "tissue": self.tissue,
+            "phenotype": self.phenotype,
             "cpg": self.cpg,
-            "rs": self.rs,
-            "model_type": "OLS",
-            "reg": 1,
+            "rs": self.rs
         }
+
         try:
             result = requests.post(f"{self.endpoint}/analyse", json=body, timeout=1000)
             result.raise_for_status()
